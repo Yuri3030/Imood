@@ -8,17 +8,17 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-# --- garantir que a raiz do projeto esteja no sys.path ---
+# --- garantir que a raiz (/app) esteja no sys.path ---
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
-# --- imports da sua app ---
+# --- sua app ---
 from app.core.settings import get_settings
-from app.database import Base  # Base é declarada no database.py
-import app.models  # importa modelos para registrar as tabelas no Base.metadata  # noqa: F401
+from app.database import Base
+import app.models  # importa os modelos para registrar no Base.metadata  # noqa: F401
 
-# objeto de configuração do Alembic
+# objeto de config do Alembic
 config = context.config
 
 # logging do Alembic
@@ -33,34 +33,31 @@ settings = get_settings()
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 def run_migrations_offline() -> None:
-    """Executa migrações no modo offline."""
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
-        compare_type=True,  # detecta mudanças de tipo
+        compare_type=True,
+        compare_server_default=True,
     )
-
     with context.begin_transaction():
         context.run_migrations()
 
 def run_migrations_online() -> None:
-    """Executa migrações no modo online."""
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
         future=True,
     )
-
     with connectable.connect() as connection:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
-            compare_type=True,  # detecta mudanças de tipo
+            compare_type=True,
+            compare_server_default=True,
         )
-
         with context.begin_transaction():
             context.run_migrations()
 

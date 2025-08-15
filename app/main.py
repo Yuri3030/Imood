@@ -1,17 +1,13 @@
 # app/main.py
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from app.core.settings import get_settings
 
-# 🔽 importe o "router" diretamente de cada arquivo
-from app.routers.users import router as users_router
-from app.routers.moods import router as moods_router
-from app.routers.reminders import router as reminders_router
-from app.routers.emergency_contacts import router as emergency_contacts_router
-
-from app.startup import run_startup_tasks
+from app.routers.pessoas import router as pessoas_router
+from app.routers.check_ins import router as check_ins_router
+from app.routers.lembretes import router as lembretes_router
+from app.routers.contatos_emergencia import router as contatos_emergencia_router
+from app.routers.contatos_emergencia import ensure_default_emergency_contacts
 
 settings = get_settings()
 app = FastAPI(title=settings.APP_NAME)
@@ -28,12 +24,13 @@ app.add_middleware(
 def root():
     return {"message": "🚀 FastAPI + PostgreSQL funcionando! (sem autenticação)"}
 
-# 🔽 registre os routers importados acima
-app.include_router(users_router)
-app.include_router(moods_router)
-app.include_router(reminders_router)
-app.include_router(emergency_contacts_router)
+# registra novos routers
+app.include_router(pessoas_router)
+app.include_router(check_ins_router)
+app.include_router(lembretes_router)
+app.include_router(contatos_emergencia_router)
 
+# seed dos contatos padrão
 @app.on_event("startup")
 def on_startup():
-    run_startup_tasks()
+    ensure_default_emergency_contacts()

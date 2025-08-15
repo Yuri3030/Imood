@@ -11,67 +11,67 @@ from sqlalchemy import Enum as SqlEnum
 from app.database import Base
 
 
-# ---------- Users ----------
-class User(Base):
-    __tablename__ = "users"
+# ---------- Pessoas ----------
+class Pessoa(Base):
+    __tablename__ = "pessoas"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
-    # REMOVIDO: password_hash
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     date_of_birth = Column(Date, nullable=True)
     deleted_at = Column(DateTime, nullable=True)
 
 
-# ---------- Moods ----------
-class MoodType(str, enum.Enum):
+# ---------- Check-ins ----------
+# Mantemos o tipo enum do DB compatível (nome original) para evitar migração complexa
+class CheckInType(str, enum.Enum):
     alegria = "alegria"
     tristeza = "tristeza"
     angustia = "angustia"
     magoa = "mágoa"
     ansiedade = "ansiedade"
 
-
-class Mood(Base):
-    __tablename__ = "moods"
+class CheckIn(Base):
+    __tablename__ = "check_ins"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    pessoa_id = Column(Integer, ForeignKey("pessoas.id", ondelete="CASCADE"), nullable=False, index=True)
     score = Column(Integer, nullable=False)
-    mood_type = Column(SqlEnum(MoodType), nullable=False)
+    # nomeamos o tipo enum no DB como "moodtype" para compatibilidade (se antes existia)
+    checkin_type = Column(SqlEnum(CheckInType, name="moodtype"), nullable=False)
     comment = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (
-        CheckConstraint("score >= 1 AND score <= 5", name="ck_moods_score_range"),
+        CheckConstraint("score >= 1 AND score <= 5", name="ck_check_ins_score_range"),
     )
 
-    user = relationship("User", backref=backref("moods", cascade="all, delete-orphan"))
+    pessoa = relationship("Pessoa", backref=backref("check_ins", cascade="all, delete-orphan"))
 
 
-# ---------- Reminders ----------
-class Reminder(Base):
-    __tablename__ = "reminders"
+# ---------- Lembretes ----------
+class Lembrete(Base):
+    __tablename__ = "lembretes"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    pessoa_id = Column(Integer, ForeignKey("pessoas.id", ondelete="CASCADE"), nullable=False, index=True)
     message = Column(String, nullable=False)
     due_at = Column(DateTime(timezone=True), nullable=False)
     done = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    user = relationship("User", backref=backref("reminders", cascade="all, delete-orphan"))
+    pessoa = relationship("Pessoa", backref=backref("lembretes", cascade="all, delete-orphan"))
 
 
-# ---------- Emergency Contacts ----------
-class EmergencyContact(Base):
-    __tablename__ = "emergency_contacts"
+# ---------- Contatos de Emergência ----------
+class ContatoEmergencia(Base):
+    __tablename__ = "contatos_emergencia"
 
     id = Column(Integer, primary_key=True, index=True)
-    # Contato global (padrão): user_id = NULL e is_default = True
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
+    # Contato global (padrão): pessoa_id = NULL e is_default = True
+    pessoa_id = Column(Integer, ForeignKey("pessoas.id", ondelete="CASCADE"), nullable=True, index=True)
 
     name = Column(String, nullable=False)
     phone = Column(String, nullable=False)
@@ -80,4 +80,4 @@ class EmergencyContact(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     deleted_at = Column(DateTime, nullable=True)
 
-    user = relationship("User", backref="emergency_contacts")
+    pessoa = relationship("Pessoa", backref="contatos_emergencia")

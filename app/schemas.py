@@ -1,75 +1,69 @@
-from pydantic import BaseModel, EmailStr
-from pydantic import Field
+from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime, date
 from enum import Enum
-from typing import Optional, List
+from typing import Optional
 
-# -------- Users --------
-class UserCreate(BaseModel):
+# -------- Pessoas --------
+class PessoaCreate(BaseModel):
     name: str
     email: EmailStr
     date_of_birth: Optional[date] = None
 
-class UserResponse(BaseModel):
+class PessoaResponse(BaseModel):
     id: int
     name: str
     email: EmailStr
     date_of_birth: Optional[date] = None
     is_active: bool
     created_at: datetime
+    model_config = {"from_attributes": True}
 
-    model_config = {"from_attributes": True}  # Pydantic v2
-
-# -------- Moods --------
-class MoodType(str, Enum):
+# -------- Check-ins --------
+class CheckInType(str, Enum):
     alegria = "alegria"
     tristeza = "tristeza"
     angustia = "angustia"
     magoa = "mágoa"
     ansiedade = "ansiedade"
 
-class MoodCreate(BaseModel):
+class CheckInCreate(BaseModel):
     score: int = Field(..., ge=1, le=5)
-    mood_type: MoodType
+    checkin_type: CheckInType
     comment: Optional[str] = None
 
-class MoodResponse(BaseModel):
+class CheckInResponse(BaseModel):
     id: int
     score: int
-    mood_type: MoodType
+    checkin_type: CheckInType
     comment: Optional[str]
     created_at: datetime
-
     model_config = {"from_attributes": True}
 
-# -------- Reminders --------
-class ReminderCreate(BaseModel):
+# -------- Lembretes --------
+class LembreteCreate(BaseModel):
     message: str = Field(..., min_length=1, max_length=280)
-    # ISO 8601 (ex.: "2025-08-10T14:00:00Z")
     due_at: datetime
 
-class ReminderResponse(BaseModel):
+class LembreteResponse(BaseModel):
     id: int
     message: str
     due_at: datetime
     done: bool
     created_at: datetime
-
     model_config = {"from_attributes": True}
 
-# -------- Emergency Contacts --------
-class EmergencyContactBase(BaseModel):
+# -------- Contatos de Emergência --------
+class ContatoEmergenciaBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=80)
     phone: str = Field(..., min_length=2, max_length=30)
     category: Optional[str] = None
 
-class EmergencyContactCreate(EmergencyContactBase):
+class ContatoEmergenciaCreate(ContatoEmergenciaBase):
     pass
 
-class EmergencyContactResponse(EmergencyContactBase):
+class ContatoEmergenciaResponse(ContatoEmergenciaBase):
     id: int
     is_default: bool
     created_at: datetime
     deleted_at: Optional[datetime] = None
-
     model_config = {"from_attributes": True}

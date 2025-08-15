@@ -15,8 +15,6 @@ class Settings(BaseSettings):
 
     # banco
     DATABASE_URL: str = "postgresql+psycopg://postgres:postgres@db:5432/appdb"
-    # Se você estiver usando psycopg2-binary, troque para:
-    # DATABASE_URL: str = "postgresql://postgres:postgres@db:5432/appdb"
 
     # CORS
     ALLOWED_ORIGINS: str = "*"

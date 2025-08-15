@@ -4,11 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db, SessionLocal
-from app.models import EmergencyContact, User
+from app.models import ContatoEmergencia, Pessoa
+from app.schemas import ContatoEmergenciaCreate, ContatoEmergenciaResponse
 
-from app.schemas import EmergencyContactCreate, EmergencyContactResponse
-
-router = APIRouter(prefix="/users/{user_id}/emergency-contacts", tags=["emergency-contacts"])
+router = APIRouter(prefix="/pessoas/{pessoa_id}/contatos_emergencia", tags=["contatos_emergencia"])
 
 DEFAULT_BR_CONTACTS = [
     {"name": "Polícia Militar", "phone": "190", "category": "seguranca"},
@@ -25,15 +24,15 @@ DEFAULT_BR_CONTACTS = [
 def ensure_default_emergency_contacts():
     db: Session = SessionLocal()
     try:
-        exists = db.query(EmergencyContact).filter(
-            EmergencyContact.is_default.is_(True),
-            EmergencyContact.deleted_at.is_(None)
+        exists = db.query(ContatoEmergencia).filter(
+            ContatoEmergencia.is_default.is_(True),
+            ContatoEmergencia.deleted_at.is_(None)
         ).first()
         if exists:
             return
         for c in DEFAULT_BR_CONTACTS:
-            db.add(EmergencyContact(
-                user_id=None,
+            db.add(ContatoEmergencia(
+                pessoa_id=None,
                 name=c["name"],
                 phone=c["phone"],
                 category=c.get("category"),
@@ -43,26 +42,28 @@ def ensure_default_emergency_contacts():
     finally:
         db.close()
 
-@router.get("", response_model=List[EmergencyContactResponse])
-def list_all_contacts(user_id: int, db: Session = Depends(get_db)):
-    """Lista contatos padrão + contatos do usuário informado."""
-    user = db.query(User).get(user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+@router.get("", response_model=List[ContatoEmergenciaResponse])
+def list_all(pessoa_id: int, db: Session = Depends(get_db)):
+    p = db.query(Pessoa).get(pessoa_id)
+    if not p:
+        raise HTTPException(status_code=404, detail="Pessoa não encontrada")
 
-    q = db.query(EmergencyContact).filter(EmergencyContact.deleted_at.is_(None)).filter(
-        (EmergencyContact.is_default.is_(True)) | (EmergencyContact.user_id == user_id)
-    ).order_by(EmergencyContact.is_default.desc(), EmergencyContact.name.asc())
-    return q.all()
+    return (
+        db.query(ContatoEmergencia)
+        .filter(ContatoEmergencia.deleted_at.is_(None))
+        .filter((ContatoEmergencia.is_default.is_(True)) | (ContatoEmergencia.pessoa_id == pessoa_id))
+        .order_by(ContatoEmergencia.is_default.desc(), ContatoEmergencia.name.asc())
+        .all()
+    )
 
-@router.post("", response_model=EmergencyContactResponse, status_code=201)
-def create_contact(user_id: int, payload: EmergencyContactCreate, db: Session = Depends(get_db)):
-    user = db.query(User).get(user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+@router.post("", response_model=ContatoEmergenciaResponse, status_code=201)
+def create_contact(pessoa_id: int, payload: ContatoEmergenciaCreate, db: Session = Depends(get_db)):
+    p = db.query(Pessoa).get(pessoa_id)
+    if not p:
+        raise HTTPException(status_code=404, detail="Pessoa não encontrada")
 
-    ec = EmergencyContact(
-        user_id=user_id,
+    ec = ContatoEmergencia(
+        pessoa_id=pessoa_id,
         name=payload.name,
         phone=payload.phone,
         category=payload.category,
@@ -74,19 +75,17 @@ def create_contact(user_id: int, payload: EmergencyContactCreate, db: Session = 
     return ec
 
 @router.delete("/{contact_id}", status_code=200)
-def delete_contact(user_id: int, contact_id: int, db: Session = Depends(get_db)):
-    """Soft delete: só pode excluir contatos do próprio usuário; defaults ninguém exclui aqui."""
-    ec = db.query(EmergencyContact).filter(EmergencyContact.id == contact_id).first()
+def delete_contact(pessoa_id: int, contact_id: int, db: Session = Depends(get_db)):
+    ec = db.query(ContatoEmergencia).filter(ContatoEmergencia.id == contact_id).first()
     if not ec or ec.deleted_at is not None:
         raise HTTPException(status_code=404, detail="Contato não encontrado")
 
     if ec.is_default:
         raise HTTPException(status_code=403, detail="Contato padrão não pode ser excluído por esta rota")
 
-    if ec.user_id != user_id:
+    if ec.pessoa_id != pessoa_id:
         raise HTTPException(status_code=403, detail="Sem permissão para excluir este contato")
 
     ec.deleted_at = datetime.utcnow()
     db.commit()
     return {"message": "Contato excluído com sucesso (soft delete)."}
-

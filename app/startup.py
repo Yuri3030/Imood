@@ -1,5 +1,3 @@
-# app/startup.py
-
 from app.routers.emergency_contacts import ensure_default_emergency_contacts
 
 def run_startup_tasks():

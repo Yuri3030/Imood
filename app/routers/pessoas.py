@@ -35,12 +35,6 @@ def criar_pessoa(payload: PessoaCreate, db: Session = Depends(get_db)):
 def me(current: Pessoa = Depends(get_current_pessoa)):
     return current
 
-@router.get("/{pessoa_id}", response_model=PessoaResponse)
-def informacoes_pessoa(pessoa_id: int, db: Session = Depends(get_db), current: Pessoa = Depends(require_owner)):
-    pessoa = db.query(Pessoa).get(pessoa_id)
-    if not pessoa:
-        raise HTTPException(status_code=404, detail="Pessoa não encontrada")
-    return pessoa
 
 @router.delete("/{pessoa_id}", status_code=200)
 def delete_pessoa(pessoa_id: int, db: Session = Depends(get_db), current: Pessoa = Depends(require_owner)):

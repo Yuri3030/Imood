@@ -1,8 +1,8 @@
 """baseline pt-br schema
 
-Revision ID: d619f21dfe99
+Revision ID: 80860d80d6cb
 Revises: 
-Create Date: 2025-08-17 11:33:29.458212
+Create Date: 2025-08-17 12:34:09.532594
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'd619f21dfe99'
+revision: str = '80860d80d6cb'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -24,11 +24,12 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('email', sa.String(), nullable=False),
+    sa.Column('password_hash', sa.String(), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('date_of_birth', sa.Date(), nullable=True),
     sa.Column('deleted_at', sa.DateTime(), nullable=True),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_pessoas'))
     )
     op.create_index(op.f('ix_pessoas_email'), 'pessoas', ['email'], unique=True)
     op.create_index(op.f('ix_pessoas_id'), 'pessoas', ['id'], unique=False)
@@ -39,9 +40,9 @@ def upgrade() -> None:
     sa.Column('checkin_type', sa.Enum('alegria', 'tristeza', 'angustia', 'magoa', 'ansiedade', name='moodtype'), nullable=False),
     sa.Column('comment', sa.String(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.CheckConstraint('score >= 1 AND score <= 5', name='ck_check_ins_score_range'),
-    sa.ForeignKeyConstraint(['pessoa_id'], ['pessoas.id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('id')
+    sa.CheckConstraint('score >= 1 AND score <= 5', name=op.f('ck_check_ins_ck_check_ins_score_range')),
+    sa.ForeignKeyConstraint(['pessoa_id'], ['pessoas.id'], name=op.f('fk_check_ins_pessoa_id_pessoas'), ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_check_ins'))
     )
     op.create_index(op.f('ix_check_ins_id'), 'check_ins', ['id'], unique=False)
     op.create_index(op.f('ix_check_ins_pessoa_id'), 'check_ins', ['pessoa_id'], unique=False)
@@ -54,8 +55,8 @@ def upgrade() -> None:
     sa.Column('is_default', sa.Boolean(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('deleted_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['pessoa_id'], ['pessoas.id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('id')
+    sa.ForeignKeyConstraint(['pessoa_id'], ['pessoas.id'], name=op.f('fk_contatos_emergencia_pessoa_id_pessoas'), ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_contatos_emergencia'))
     )
     op.create_index(op.f('ix_contatos_emergencia_id'), 'contatos_emergencia', ['id'], unique=False)
     op.create_index(op.f('ix_contatos_emergencia_pessoa_id'), 'contatos_emergencia', ['pessoa_id'], unique=False)
@@ -66,8 +67,8 @@ def upgrade() -> None:
     sa.Column('due_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('done', sa.Boolean(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['pessoa_id'], ['pessoas.id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('id')
+    sa.ForeignKeyConstraint(['pessoa_id'], ['pessoas.id'], name=op.f('fk_lembretes_pessoa_id_pessoas'), ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_lembretes'))
     )
     op.create_index(op.f('ix_lembretes_id'), 'lembretes', ['id'], unique=False)
     op.create_index(op.f('ix_lembretes_pessoa_id'), 'lembretes', ['pessoa_id'], unique=False)

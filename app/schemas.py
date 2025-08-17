@@ -3,20 +3,30 @@ from datetime import datetime, date
 from enum import Enum
 from typing import Optional
 
+# -------- login --------
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
 # -------- Pessoas --------
+
 class PessoaCreate(BaseModel):
     name: str
     email: EmailStr
-    date_of_birth: Optional[date] = None
+    password: str = Field(..., min_length=6)   # <- senha enviada no cadastro
+    date_of_birth: date | None = None
 
 class PessoaResponse(BaseModel):
     id: int
     name: str
     email: EmailStr
-    date_of_birth: Optional[date] = None
     is_active: bool
     created_at: datetime
-    model_config = {"from_attributes": True}
+    date_of_birth: date | None = None
+
+    model_config = {"from_attributes": True}  # pydantic v2
+
 
 # -------- Check-ins --------
 class CheckInType(str, Enum):
@@ -67,3 +77,15 @@ class ContatoEmergenciaResponse(ContatoEmergenciaBase):
     created_at: datetime
     deleted_at: Optional[datetime] = None
     model_config = {"from_attributes": True}
+
+
+# -------- autenticação --------
+class SignupCreate(BaseModel):
+    name: str
+    email: EmailStr
+    password: str = Field(..., min_length=6)
+    date_of_birth: date | None = None
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"

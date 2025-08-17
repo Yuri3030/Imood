@@ -1,11 +1,13 @@
-from datetime import datetime
+# app/routers/contatos_emergencia.py
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app.database import get_db, SessionLocal
-from app.models import ContatoEmergencia, Pessoa
+from app.models import ContatoEmergencia, Pessoa as PessoaModel
 from app.schemas import ContatoEmergenciaCreate, ContatoEmergenciaResponse
+from app.security.deps import require_owner
 
 router = APIRouter(prefix="/pessoas/{pessoa_id}/contatos_emergencia", tags=["contatos_emergencia"])
 
@@ -43,31 +45,32 @@ def ensure_default_emergency_contacts():
         db.close()
 
 @router.get("", response_model=List[ContatoEmergenciaResponse])
-def list_all(pessoa_id: int, db: Session = Depends(get_db)):
-    p = db.query(Pessoa).get(pessoa_id)
-    if not p:
-        raise HTTPException(status_code=404, detail="Pessoa não encontrada")
-
-    return (
+def listar_contatos(
+    pessoa_id: int,
+    db: Session = Depends(get_db),
+    current: PessoaModel = Depends(require_owner),
+):
+    q = (
         db.query(ContatoEmergencia)
         .filter(ContatoEmergencia.deleted_at.is_(None))
         .filter((ContatoEmergencia.is_default.is_(True)) | (ContatoEmergencia.pessoa_id == pessoa_id))
         .order_by(ContatoEmergencia.is_default.desc(), ContatoEmergencia.name.asc())
-        .all()
     )
+    return q.all()
 
-@router.post("", response_model=ContatoEmergenciaResponse, status_code=201)
-def create_contact(pessoa_id: int, payload: ContatoEmergenciaCreate, db: Session = Depends(get_db)):
-    p = db.query(Pessoa).get(pessoa_id)
-    if not p:
-        raise HTTPException(status_code=404, detail="Pessoa não encontrada")
-
+@router.post("", response_model=ContatoEmergenciaResponse, status_code=status.HTTP_201_CREATED)
+def criar_contatos(
+    pessoa_id: int,
+    payload: ContatoEmergenciaCreate,
+    db: Session = Depends(get_db),
+    current: PessoaModel = Depends(require_owner),
+):
     ec = ContatoEmergencia(
         pessoa_id=pessoa_id,
         name=payload.name,
         phone=payload.phone,
         category=payload.category,
-        is_default=False
+        is_default=False,
     )
     db.add(ec)
     db.commit()
@@ -75,17 +78,22 @@ def create_contact(pessoa_id: int, payload: ContatoEmergenciaCreate, db: Session
     return ec
 
 @router.delete("/{contact_id}", status_code=200)
-def delete_contact(pessoa_id: int, contact_id: int, db: Session = Depends(get_db)):
+def delete_contato(
+    pessoa_id: int,
+    contact_id: int,
+    db: Session = Depends(get_db),
+    current: PessoaModel = Depends(require_owner),
+):
     ec = db.query(ContatoEmergencia).filter(ContatoEmergencia.id == contact_id).first()
     if not ec or ec.deleted_at is not None:
         raise HTTPException(status_code=404, detail="Contato não encontrado")
 
     if ec.is_default:
-        raise HTTPException(status_code=403, detail="Contato padrão não pode ser excluído por esta rota")
+        raise HTTPException(status_code=403, detail="Contatos padrão não podem ser excluídos")
 
     if ec.pessoa_id != pessoa_id:
         raise HTTPException(status_code=403, detail="Sem permissão para excluir este contato")
 
-    ec.deleted_at = datetime.utcnow()
+    ec.deleted_at = func.now()
     db.commit()
     return {"message": "Contato excluído com sucesso (soft delete)."}

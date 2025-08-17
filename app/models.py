@@ -12,20 +12,24 @@ from app.database import Base
 
 
 # ---------- Pessoas ----------
+
+# app/models.py (trecho)
 class Pessoa(Base):
     __tablename__ = "pessoas"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
+    password_hash = Column(String, nullable=True)  
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     date_of_birth = Column(Date, nullable=True)
     deleted_at = Column(DateTime, nullable=True)
 
 
+
 # ---------- Check-ins ----------
-# Mantemos o tipo enum do DB compatível (nome original) para evitar migração complexa
+
 class CheckInType(str, enum.Enum):
     alegria = "alegria"
     tristeza = "tristeza"
@@ -39,7 +43,6 @@ class CheckIn(Base):
     id = Column(Integer, primary_key=True, index=True)
     pessoa_id = Column(Integer, ForeignKey("pessoas.id", ondelete="CASCADE"), nullable=False, index=True)
     score = Column(Integer, nullable=False)
-    # nomeamos o tipo enum no DB como "moodtype" para compatibilidade (se antes existia)
     checkin_type = Column(SqlEnum(CheckInType, name="moodtype"), nullable=False)
     comment = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -70,7 +73,6 @@ class ContatoEmergencia(Base):
     __tablename__ = "contatos_emergencia"
 
     id = Column(Integer, primary_key=True, index=True)
-    # Contato global (padrão): pessoa_id = NULL e is_default = True
     pessoa_id = Column(Integer, ForeignKey("pessoas.id", ondelete="CASCADE"), nullable=True, index=True)
 
     name = Column(String, nullable=False)

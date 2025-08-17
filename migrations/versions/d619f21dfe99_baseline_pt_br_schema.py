@@ -1,8 +1,8 @@
 """baseline pt-br schema
 
-Revision ID: 2a8047623ab0
+Revision ID: d619f21dfe99
 Revises: 
-Create Date: 2025-08-15 17:05:21.178985
+Create Date: 2025-08-17 11:33:29.458212
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '2a8047623ab0'
+revision: str = 'd619f21dfe99'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
